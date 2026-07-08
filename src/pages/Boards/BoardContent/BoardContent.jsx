@@ -2,7 +2,7 @@
 import Box from '@mui/material/Box'
 import ListColumn from './ListColumns/ListColumns'
 import { mapOrder } from '~/utils/sorts'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import {
   DndContext,
@@ -13,7 +13,11 @@ import {
   useSensors,
   DragOverlay,
   defaultDropAnimationSideEffects,
-  closestCorners
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  getFirstCollision,
+  closestCenter
 } from '@dnd-kit/core'
 import Column from './ListColumns/Column/Column'
 import Card from './ListColumns/Column/ListCards/Card/Card'
@@ -42,6 +46,9 @@ function BoardContent({ board }) {
   const [activeDragItemType, setActiveDragItemType] = useState(null)
   const [activeDragItemData, setActiveDragItemData] = useState(null)
   const [oldColumn, setOldColumn] = useState(null)
+
+  // Diem va cham cuoi cung truoc do (xu ly thuat toan phat hien va cham)
+  const lastOverId = useRef(null)
 
   useEffect(() => {
     setOrderedColumns(mapOrder(board?.columns, board?.columnOrderIds, '_id'))
@@ -223,10 +230,47 @@ function BoardContent({ board }) {
     sideEffect: defaultDropAnimationSideEffects({ styles: { active: { opacity: 0.5 } } })
   }
 
+  const collisionDetectionStrategy = useCallback((args) => {
+    // Neu dang keo column thi dung closestCorners
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) {
+      return closestCorners({ ...args })
+    }
+
+    // Tim cac diem giao nhau, va cham - intersections voi con tro
+    const pointerIntersections = pointerWithin(args)
+
+    // Thuat toan phat hien va cham se tra ve cac va cham
+    const intersections = pointerIntersections?.length > 0
+      ? pointerIntersections
+      : rectIntersection(args)
+
+    // Tim overId dau tien trong cac intersections o tren
+    let overId = getFirstCollision(intersections, 'id')
+    if (overId) {
+      // Neu cai over la column thi se tim toi cai cardId gan nhat ben trong khu vuc va cham do dua vao thuat toan phat hien va cham closestCorners hoac closestCenter. Tuy nhien closestCenter se muot ma hon
+      const checkColumn = orderedColumns.find(c => c._id === overId)
+      if (checkColumn) {
+        overId = closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter(container => {
+            return (container.id !== overId) && (checkColumn?.cardOrderIds?.includes(container.id))
+          })
+        })[0]?.id
+      }
+
+      lastOverId.current = overId
+      return [{ id: overId }]
+    }
+
+    // Neu overId la null thi tra ve mang rong - tranh crash trang
+    return lastOverId.current ? [{ id: lastOverId.current }] : []
+  }, [activeDragItemType, orderedColumns])
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      // collisionDetection={closestCorners}
+      collisionDetection={collisionDetectionStrategy}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
