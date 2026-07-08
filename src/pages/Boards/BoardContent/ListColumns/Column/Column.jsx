@@ -16,8 +16,18 @@ import Button from '@mui/material/Button'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import ListCards from './ListCards/ListCards'
 import { mapOrder } from '~/utils/sorts'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 function Column({ column }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: column._id, data: { ...column } })
+  const dndKitColumnStyles = {
+    // touchAction: 'none', // Danh cho sensor default dang PointerSensor. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
+    // Neu su dung transform nhu docs se loi kieu stretch column khi keo tha. Nen su dung CSS.Translate.toString(transform) de chuyen doi transform tu object sang string
+    transform: CSS.Translate.toString(transform),
+    transition
+  }
+
   const [anchorEl, setAnchorEl] = React.useState(null)
   const open = Boolean(anchorEl)
 
@@ -32,6 +42,10 @@ function Column({ column }) {
   const orderedCards = mapOrder(column?.cards, column?.cardOrderIds, '_id')
   return (
     <Box
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={dndKitColumnStyles}
       sx={{
         minWidth: '300px',
         maxWidth: '300px',
