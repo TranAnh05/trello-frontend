@@ -41,6 +41,7 @@ function BoardContent({ board }) {
   const [activeDragItemId, setActiveDragItemId] = useState(null)
   const [activeDragItemType, setActiveDragItemType] = useState(null)
   const [activeDragItemData, setActiveDragItemData] = useState(null)
+  const [oldColumn, setOldColumn] = useState(null)
 
   useEffect(() => {
     setOrderedColumns(mapOrder(board?.columns, board?.columnOrderIds, '_id'))
@@ -53,18 +54,20 @@ function BoardContent({ board }) {
   }
 
   const handleDragStart = (event) => {
-    // console.log('HandleDragStart: 'event)
-
     setActiveDragItemId(event?.active?.id)
     setActiveDragItemType(event?.active?.data?.current?.columnId ? ACTIVE_DRAG_ITEM_TYPE.CARD : ACTIVE_DRAG_ITEM_TYPE.COLUMN)
     setActiveDragItemData(event?.active?.data?.current)
+
+    // Neu dang keo card thi luu lai column cu de
+    if (event?.active?.data?.current?.columnId) {
+      setOldColumn(findColumnByCardId(event?.active?.id))
+    }
   }
 
   const handleDragOver = (event) => {
     // Khong lam gi khi keo column
     if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) return
 
-    console.log('HandleDragOver: ', event)
     const { active, over } = event
 
     if (!active || !over) return
@@ -128,33 +131,73 @@ function BoardContent({ board }) {
   }
 
   const handleDragEnd = (event) => {
-    // console.log('HandleDragEnd: ', event)
-    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) {
-      console.log('Hanh dong keo the Card - Tam thoi khong lam gi ca.')
-      return
-    }
-
     const { active, over } = event
 
     // Neu keo ra ngoai column thi khong lam gi ca
     if (!active || !over) return
 
-    // Neu column active khac column over thi moi sap xep lai orderedColumns
-    if (active.id !== over.id) {
-      // Lay vi tri cu tu column active
-      const oldIndex = orderedColumns.findIndex(c => c._id === active.id)
-      // Lay vi tri moi tu column over
-      const newIndex = orderedColumns.findIndex(c => c._id === over.id)
-      // Su dung arrayMove de sap xep lai orderedColumns theo vi tri moi
-      const dndOrderedColumns = arrayMove(orderedColumns, oldIndex, newIndex)
-      // Luu mang id vao db
-      // const dndOrderedColumnIds = dndOrderedColumns.map(c => c._id)
-      setOrderedColumns(dndOrderedColumns)
+    // Xu ly keo tha card
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) {
+      const { id: activeDraggingCardId, data: { current: activeDraggingCardData} } = active
+      // overCard: card dang tuong tac tren hoac duoi so voi cai dang duoc keo
+      const { id: overCardId } = over
+
+      // Tim 2 column theo cardId
+      const activeColumn = findColumnByCardId(activeDraggingCardId)
+      const overColumn = findColumnByCardId(overCardId)
+
+      // Neu khong tim thay 1 trong 2 column thi khong lam gi ca
+      if (!activeColumn || !overColumn) return
+
+      // Phai dung oldColumn set vao startDrag de lay duoc column cu truoc khi keo. Vi luc keo (over) thi column cu da bi thay doi (da bi setState) roi nen khong dung duoc
+      if (oldColumn._id !== overColumn._id) {
+        console.log('Keo card qua 2 column khac nhau.')
+      } else {
+        // Keo card trong cung mot column
+        // Lay vi tri cu tu old column
+        const oldCardIndex = oldColumn?.cards?.findIndex(c => c._id === activeDragItemId)
+        // Lay vi tri moi tu column over
+        const newCardIndex = overColumn?.cards?.findIndex(c => c._id === overCardId)
+        // Su dung arrayMove de sap xep lai orderedCards theo vi tri moi
+        const dndOrderedCards = arrayMove(oldColumn?.cards, oldCardIndex, newCardIndex)
+
+        //
+        setOrderedColumns(prevColumns => {
+          const nextColumns = cloneDeep(prevColumns)
+
+          // Tim toi column ma chung ta dang tha
+          const targetColumn = nextColumns.find(c => c._id === overColumn._id)
+
+          // Cap nhat lai card va cardOrderIds cua column do
+          targetColumn.cards = dndOrderedCards
+          targetColumn.cardOrderIds = dndOrderedCards.map(c => c._id)
+
+          return nextColumns
+        })
+
+      }
+    }
+
+    // Xu ly keo tha column
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) {
+      // Neu column active khac column over thi moi sap xep lai orderedColumns
+      if (active.id !== over.id) {
+        // Lay vi tri cu tu column active
+        const oldIndex = orderedColumns.findIndex(c => c._id === active.id)
+        // Lay vi tri moi tu column over
+        const newIndex = orderedColumns.findIndex(c => c._id === over.id)
+        // Su dung arrayMove de sap xep lai orderedColumns theo vi tri moi
+        const dndOrderedColumns = arrayMove(orderedColumns, oldIndex, newIndex)
+        // Luu mang id vao db
+        // const dndOrderedColumnIds = dndOrderedColumns.map(c => c._id)
+        setOrderedColumns(dndOrderedColumns)
+      }
     }
 
     setActiveDragItemId(null)
     setActiveDragItemType(null)
     setActiveDragItemData(null)
+    setOldColumn(null)
   }
 
   const customDropAnimation = {
