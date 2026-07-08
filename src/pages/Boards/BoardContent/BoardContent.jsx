@@ -53,6 +53,65 @@ function BoardContent({ board }) {
     return orderedColumns.find(column => column.cards.map(card => card._id)?.includes(cardId))
   }
 
+  // Ham xu ly cap nhat lai state khi keo card tu column nay sang column khac
+  const moveCardBetweenColumns = (
+    active,
+    over,
+    overColumn,
+    overCardId,
+    activeColumn,
+    activeDraggingCardId,
+    activeDraggingCardData
+  ) => {
+    setOrderedColumns(prevColumns => {
+      // Tim vi tri cua cai overcard trong column dich (noi card sap duoc tha)
+      const overCardIndex = overColumn?.cards?.findIndex(card => card._id === overCardId)
+
+      // logic tinh toan cardindex moi (tren hoac duoi cua overcard)
+      // Logic tren duoc lay ra tu thu vien
+      let newCardIndex
+      // Kiem tra xem card dang duoc keo co nam duoi card dang tuong tac hay khong. Neu co thi moi cong them 1 vao index cua overcard de dat card dang keo o duoi overcard
+      const isBelowOverItem = active.rect.current.translated &&
+        active.rect.current.translated.top > over.rect.top + over.rect.height
+      const modifier = isBelowOverItem ? 1 : 0
+      // Neu overcardIndex >= 0 thi moi cong them modifier vao. Neu khong thi dat newCardIndex = so luong card trong column dich + 1 (them vao cuoi)
+      newCardIndex = overCardIndex >= 0 ? overCardIndex + modifier : overColumn?.cards?.length + 1
+
+      // clone mang orderedColumnsState cu ra mot cai moi de xu ly data roi return - cap nhat lai
+      // orderedColumnsState moi.
+      const nextColumns = cloneDeep(prevColumns)
+      const nextActiveColumn = nextColumns.find(c => c._id === activeColumn._id)
+      const nextOverColumn = nextColumns.find(c => c._id === overColumn._id)
+
+      if (nextActiveColumn) {
+        // Xoa card o column active (da keo di thi phai xoa no di)
+        nextActiveColumn.cards = nextActiveColumn.cards.filter(card => card._id !== activeDraggingCardId)
+
+        // Cap nhat lai cardOrderIds moi cho column active
+        nextActiveColumn.cardOrderIds = nextActiveColumn.cards.map(card => card._id)
+      }
+
+      if (nextOverColumn) {
+        // Kiem tra xem card dang duoc keo co nam trong column dich hay khong. Neu co thi xoa no di de tranh bi duplicate
+        nextOverColumn.cards = nextOverColumn.cards.filter(card => card._id !== activeDraggingCardId)
+
+        // Phai cap nhat lai columnId cua card sau khi keo sang column khac.
+        const rebuild_activeDraggingCardData = {
+          ...activeDraggingCardData,
+          columnId: nextOverColumn._id
+        }
+
+        // Them card dang keo vao column dich (overColumn) o vi tri moi tinh toan duoc (newCardIndex)
+        nextOverColumn.cards = nextOverColumn.cards.toSpliced(newCardIndex, 0, rebuild_activeDraggingCardData)
+
+        // Cap nhat lai cardOrderIds moi cho column over
+        nextOverColumn.cardOrderIds = nextOverColumn.cards.map(card => card._id)
+      }
+
+      return nextColumns
+    })
+  }
+
   const handleDragStart = (event) => {
     setActiveDragItemId(event?.active?.id)
     setActiveDragItemType(event?.active?.data?.current?.columnId ? ACTIVE_DRAG_ITEM_TYPE.CARD : ACTIVE_DRAG_ITEM_TYPE.COLUMN)
@@ -72,7 +131,7 @@ function BoardContent({ board }) {
 
     if (!active || !over) return
 
-    const { id: activeDraggingCardId, data: { current: activeDraggingCardData} } = active
+    const { id: activeDraggingCardId, data: { current: activeDraggingCardData } } = active
     // overCard: card dang tuong tac tren hoac duoi so voi cai dang duoc keo
     const { id: overCardId } = over
 
@@ -86,47 +145,7 @@ function BoardContent({ board }) {
     // Chi khi 2 keo card qua 2 column khac nhau thi moi chay vao logic ben duoi
     // Day la giai doan xu ly luc keo (over), con xu ly luc tha (end) thi se do handleDragEnd xu ly
     if (activeColumn._id !== overColumn._id) {
-      setOrderedColumns(prevColumns => {
-        // Tim vi tri cua cai overcard trong column dich (noi card sap duoc tha)
-        const overCardIndex = overColumn?.cards?.findIndex(card => card._id === overCardId)
-
-        // logic tinh toan cardindex moi (tren hoac duoi cua overcard)
-        // Logic tren duoc lay ra tu thu vien
-        let newCardIndex
-        // Kiem tra xem card dang duoc keo co nam duoi card dang tuong tac hay khong. Neu co thi moi cong them 1 vao index cua overcard de dat card dang keo o duoi overcard
-        const isBelowOverItem = active.rect.current.translated &&
-          active.rect.current.translated.top > over.rect.top + over.rect.height
-        const modifier = isBelowOverItem ? 1 : 0
-        // Neu overcardIndex >= 0 thi moi cong them modifier vao. Neu khong thi dat newCardIndex = so luong card trong column dich + 1 (them vao cuoi)
-        newCardIndex = overCardIndex >= 0 ? overCardIndex + modifier : overColumn?.cards?.length + 1
-
-        // clone mang orderedColumnsState cu ra mot cai moi de xu ly data roi return - cap nhat lai
-        // orderedColumnsState moi.
-        const nextColumns = cloneDeep(prevColumns)
-        const nextActiveColumn = nextColumns.find(c => c._id === activeColumn._id)
-        const nextOverColumn = nextColumns.find(c => c._id === overColumn._id)
-
-        if (nextActiveColumn) {
-          // Xoa card o column active (da keo di thi phai xoa no di)
-          nextActiveColumn.cards = nextActiveColumn.cards.filter(card => card._id !== activeDraggingCardId)
-
-          // Cap nhat lai cardOrderIds moi cho column active
-          nextActiveColumn.cardOrderIds = nextActiveColumn.cards.map(card => card._id)
-        }
-
-        if (nextOverColumn) {
-          // Kiem tra xem card dang duoc keo co nam trong column dich hay khong. Neu co thi xoa no di de tranh bi duplicate
-          nextOverColumn.cards = nextOverColumn.cards.filter(card => card._id !== activeDraggingCardId)
-
-          // Them card dang keo vao column dich (overColumn) o vi tri moi tinh toan duoc (newCardIndex)
-          nextOverColumn.cards = nextOverColumn.cards.toSpliced(newCardIndex, 0, activeDraggingCardData)
-
-          // Cap nhat lai cardOrderIds moi cho column over
-          nextOverColumn.cardOrderIds = nextOverColumn.cards.map(card => card._id)
-        }
-
-        return nextColumns
-      })
+      moveCardBetweenColumns(active, over, overColumn, overCardId, activeColumn, activeDraggingCardId, activeDraggingCardData)
     }
   }
 
@@ -138,7 +157,7 @@ function BoardContent({ board }) {
 
     // Xu ly keo tha card
     if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) {
-      const { id: activeDraggingCardId, data: { current: activeDraggingCardData} } = active
+      const { id: activeDraggingCardId, data: { current: activeDraggingCardData } } = active
       // overCard: card dang tuong tac tren hoac duoi so voi cai dang duoc keo
       const { id: overCardId } = over
 
@@ -151,7 +170,7 @@ function BoardContent({ board }) {
 
       // Phai dung oldColumn set vao startDrag de lay duoc column cu truoc khi keo. Vi luc keo (over) thi column cu da bi thay doi (da bi setState) roi nen khong dung duoc
       if (oldColumn._id !== overColumn._id) {
-        console.log('Keo card qua 2 column khac nhau.')
+        moveCardBetweenColumns(active, over, overColumn, overCardId, activeColumn, activeDraggingCardId, activeDraggingCardData)
       } else {
         // Keo card trong cung mot column
         // Lay vi tri cu tu old column
