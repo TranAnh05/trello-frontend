@@ -17,7 +17,8 @@ function Card({ card }) {
     // Neu su dung transform nhu docs se loi kieu stretch column khi keo tha. Nen su dung CSS.Translate.toString(transform) de chuyen doi transform tu object sang string
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : undefined
+    opacity: isDragging ? 0.5 : undefined,
+    border: isDragging ? '1px solid #2ecc71' : undefined
   }
 
   const shouldShowCardAction = () => {
