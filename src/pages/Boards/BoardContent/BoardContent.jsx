@@ -21,7 +21,8 @@ import {
 } from '@dnd-kit/core'
 import Column from './ListColumns/Column/Column'
 import Card from './ListColumns/Column/ListCards/Card/Card'
-import { cloneDeep } from 'lodash'
+import { cloneDeep, isEmpty } from 'lodash'
+import { generatePlaceholderCard } from '~/utils/formatters'
 
 const ACTIVE_DRAG_ITEM_TYPE = {
   COLUMN: 'ACTIVE_DRAG_ITEM_TYPE_COLUMN',
@@ -94,6 +95,11 @@ function BoardContent({ board }) {
         // Xoa card o column active (da keo di thi phai xoa no di)
         nextActiveColumn.cards = nextActiveColumn.cards.filter(card => card._id !== activeDraggingCardId)
 
+        // Them placeholder card vao column active neu column active dang rong
+        if (isEmpty(nextActiveColumn.cards)) {
+          nextActiveColumn.cards = [generatePlaceholderCard(nextActiveColumn)]
+        }
+
         // Cap nhat lai cardOrderIds moi cho column active
         nextActiveColumn.cardOrderIds = nextActiveColumn.cards.map(card => card._id)
       }
@@ -110,6 +116,9 @@ function BoardContent({ board }) {
 
         // Them card dang keo vao column dich (overColumn) o vi tri moi tinh toan duoc (newCardIndex)
         nextOverColumn.cards = nextOverColumn.cards.toSpliced(newCardIndex, 0, rebuild_activeDraggingCardData)
+
+        // Xoa placeholder card trong column di khi co card moi duoc them vao
+        nextOverColumn.cards = nextOverColumn.cards.filter(card => !card?.FE_PlaceholderCard)
 
         // Cap nhat lai cardOrderIds moi cho column over
         nextOverColumn.cardOrderIds = nextOverColumn.cards.map(card => card._id)
