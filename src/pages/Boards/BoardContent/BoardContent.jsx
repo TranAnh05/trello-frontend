@@ -30,7 +30,7 @@ const ACTIVE_DRAG_ITEM_TYPE = {
   CARD: 'ACTIVE_DRAG_ITEM_TYPE_CARD'
 }
 
-function BoardContent({ board, createNewColumn, createNewCard }) {
+function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
   // Neu dung pointerSensor mac dinh thi phai ket hop thuoc tinh CSS touchAction: 'none' de tranh bi loi keo tha column tren mobile. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
   // const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 10 } })
   // Yeu cau chuot di chuyen 10px thi moi kich hoat event. Fix truong hop click bi goi event
@@ -226,6 +226,9 @@ function BoardContent({ board, createNewColumn, createNewCard }) {
         const dndOrderedColumns = arrayMove(orderedColumns, oldIndex, newIndex)
         // Luu mang id vao db
         // const dndOrderedColumnIds = dndOrderedColumns.map(c => c._id)
+
+        moveColumns(dndOrderedColumns)
+        // Van goi setOrderedColumns de tranh delay giao dien luc keo tha can phai goi api (small trick)
         setOrderedColumns(dndOrderedColumns)
       }
     }
