@@ -21,7 +21,7 @@ import { CSS } from '@dnd-kit/utilities'
 import TextField from '@mui/material/TextField'
 import CloseIcon from '@mui/icons-material/Close'
 
-function Column({ column }) {
+function Column({ column, createNewCard }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: column._id, data: { ...column } })
   const dndKitColumnStyles = {
     // touchAction: 'none', // Danh cho sensor default dang PointerSensor. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
@@ -50,13 +50,18 @@ function Column({ column }) {
 
   const toggleOpenNewCardForm = () => setOpenNewCardForm(!openNewCardForm)
 
-  const addNewCard = () => {
+  const addNewCard = async () => {
     if (!newCardTitle) {
       alert('Please enter card title')
       return
     }
 
-    // Call API to add new card
+    const newCardData = {
+      title: newCardTitle,
+      columnId: column._id
+    }
+
+    await createNewCard(newCardData)
 
     // Reset form and close form
     toggleOpenNewCardForm()
