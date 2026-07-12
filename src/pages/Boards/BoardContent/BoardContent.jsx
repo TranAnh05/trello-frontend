@@ -34,7 +34,8 @@ function BoardContent({
   createNewColumn,
   createNewCard,
   moveColumns,
-  moveCardInTheSameColumn
+  moveCardInTheSameColumn,
+  moveCardToDifferentColumn
 }) {
   // Neu dung pointerSensor mac dinh thi phai ket hop thuoc tinh CSS touchAction: 'none' de tranh bi loi keo tha column tren mobile. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
   // const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 10 } })
@@ -75,7 +76,8 @@ function BoardContent({
     overCardId,
     activeColumn,
     activeDraggingCardId,
-    activeDraggingCardData
+    activeDraggingCardData,
+    triggerFrom
   ) => {
     setOrderedColumns(prevColumns => {
       // Tim vi tri cua cai overcard trong column dich (noi card sap duoc tha)
@@ -130,6 +132,9 @@ function BoardContent({
         nextOverColumn.cardOrderIds = nextOverColumn.cards.map(card => card._id)
       }
 
+      if (triggerFrom === 'handleDragEnd') {
+        moveCardToDifferentColumn(activeDraggingCardId, oldColumn._id, nextOverColumn._id, nextColumns)
+      }
       return nextColumns
     })
   }
@@ -167,7 +172,16 @@ function BoardContent({
     // Chi khi 2 keo card qua 2 column khac nhau thi moi chay vao logic ben duoi
     // Day la giai doan xu ly luc keo (over), con xu ly luc tha (end) thi se do handleDragEnd xu ly
     if (activeColumn._id !== overColumn._id) {
-      moveCardBetweenColumns(active, over, overColumn, overCardId, activeColumn, activeDraggingCardId, activeDraggingCardData)
+      moveCardBetweenColumns(
+        active,
+        over,
+        overColumn,
+        overCardId,
+        activeColumn,
+        activeDraggingCardId,
+        activeDraggingCardData,
+        'handleDragOver'
+      )
     }
   }
 
@@ -192,7 +206,16 @@ function BoardContent({
 
       // Phai dung oldColumn set vao startDrag de lay duoc column cu truoc khi keo. Vi luc keo (over) thi column cu da bi thay doi (da bi setState) roi nen khong dung duoc
       if (oldColumn._id !== overColumn._id) {
-        moveCardBetweenColumns(active, over, overColumn, overCardId, activeColumn, activeDraggingCardId, activeDraggingCardData)
+        moveCardBetweenColumns(
+          active,
+          over,
+          overColumn,
+          overCardId,
+          activeColumn,
+          activeDraggingCardId,
+          activeDraggingCardData,
+          'handleDragEnd'
+        )
       } else {
         // Keo card trong cung mot column
         // Lay vi tri cu tu old column
