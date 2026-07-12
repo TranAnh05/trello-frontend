@@ -1,7 +1,6 @@
 
 import Box from '@mui/material/Box'
 import ListColumn from './ListColumns/ListColumns'
-import { mapOrder } from '~/utils/sorts'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import {
@@ -30,7 +29,13 @@ const ACTIVE_DRAG_ITEM_TYPE = {
   CARD: 'ACTIVE_DRAG_ITEM_TYPE_CARD'
 }
 
-function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
+function BoardContent({
+  board,
+  createNewColumn,
+  createNewCard,
+  moveColumns,
+  moveCardInTheSameColumn
+}) {
   // Neu dung pointerSensor mac dinh thi phai ket hop thuoc tinh CSS touchAction: 'none' de tranh bi loi keo tha column tren mobile. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
   // const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 10 } })
   // Yeu cau chuot di chuyen 10px thi moi kich hoat event. Fix truong hop click bi goi event
@@ -53,7 +58,7 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
   const lastOverId = useRef(null)
 
   useEffect(() => {
-    setOrderedColumns(mapOrder(board?.columns, board?.columnOrderIds, '_id'))
+    setOrderedColumns(board.columns)
   }, [board])
 
   const findColumnByCardId = (cardId) => {
@@ -196,8 +201,8 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
         const newCardIndex = overColumn?.cards?.findIndex(c => c._id === overCardId)
         // Su dung arrayMove de sap xep lai orderedCards theo vi tri moi
         const dndOrderedCards = arrayMove(oldColumn?.cards, oldCardIndex, newCardIndex)
+        const dndOrderedCardIds = dndOrderedCards.map(c => c._id)
 
-        //
         setOrderedColumns(prevColumns => {
           const nextColumns = cloneDeep(prevColumns)
 
@@ -206,10 +211,12 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
 
           // Cap nhat lai card va cardOrderIds cua column do
           targetColumn.cards = dndOrderedCards
-          targetColumn.cardOrderIds = dndOrderedCards.map(c => c._id)
+          targetColumn.cardOrderIds = dndOrderedCardIds
 
           return nextColumns
         })
+
+        moveCardInTheSameColumn(dndOrderedCards, dndOrderedCardIds, oldColumn._id)
 
       }
     }
@@ -226,10 +233,9 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
         const dndOrderedColumns = arrayMove(orderedColumns, oldIndex, newIndex)
         // Luu mang id vao db
         // const dndOrderedColumnIds = dndOrderedColumns.map(c => c._id)
-
-        moveColumns(dndOrderedColumns)
         // Van goi setOrderedColumns de tranh delay giao dien luc keo tha can phai goi api (small trick)
         setOrderedColumns(dndOrderedColumns)
+        moveColumns(dndOrderedColumns)
       }
     }
 
