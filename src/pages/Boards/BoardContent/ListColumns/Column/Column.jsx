@@ -20,8 +20,20 @@ import { CSS } from '@dnd-kit/utilities'
 import TextField from '@mui/material/TextField'
 import CloseIcon from '@mui/icons-material/Close'
 import { useConfirm } from 'material-ui-confirm'
+import { createNewCardAPI, deleteColumnDetailsAPI } from '~/apis'
+import { cloneDeep } from 'lodash'
+import {
+  updateCurrentActiveBoard,
+  selectCurrentActiveBoard
+} from '~/redux/activeBoard/activeBoardSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { toast } from 'react-toastify'
 
-function Column({ column, createNewCard, deleteColumnDetails }) {
+
+function Column({ column }) {
+  const dispatch = useDispatch()
+  const board = useSelector(selectCurrentActiveBoard)
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: column._id, data: { ...column } })
   const dndKitColumnStyles = {
     // touchAction: 'none', // Danh cho sensor default dang PointerSensor. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
@@ -52,7 +64,7 @@ function Column({ column, createNewCard, deleteColumnDetails }) {
 
   const toggleOpenNewCardForm = () => setOpenNewCardForm(!openNewCardForm)
 
-  const addNewCard = () => {
+  const addNewCard = async () => {
     if (!newCardTitle) {
       alert('Please enter card title')
       return
@@ -63,7 +75,24 @@ function Column({ column, createNewCard, deleteColumnDetails }) {
       columnId: column._id
     }
 
-    createNewCard(newCardData)
+    const createdCard = await createNewCardAPI({
+      ...newCardData,
+      boardId: board._id
+    })
+
+    // Fix bug: cannot assign to read only property 'cards of object
+    const newBoard = cloneDeep(board)
+    const columnToUpdate = newBoard.columns.find((column => column._id === createdCard.columnId))
+    if (columnToUpdate) {
+      if (columnToUpdate.cards.some(c => c.FE_PlaceholderCard)) {
+        columnToUpdate.cards = [createdCard]
+        columnToUpdate.cardOrderIds = [createdCard._id]
+      } else {
+        columnToUpdate.cards.push(createdCard)
+        columnToUpdate.cardOrderIds.push(createdCard._id)
+      }
+    }
+    dispatch(updateCurrentActiveBoard(newBoard))
 
     // Reset form and close form
     toggleOpenNewCardForm()
@@ -77,7 +106,17 @@ function Column({ column, createNewCard, deleteColumnDetails }) {
       confirmationText: 'Confirm'
     })
       .then(() => {
-        deleteColumnDetails(column._id)
+        // deleteColumnDetails(column._id)
+        // update cho chuan du lieu state board
+        const newBoard = { ...board }
+        newBoard.columns = newBoard.columns.filter(c => c._id !== column._id)
+        newBoard.columnOrderIds = newBoard.columnOrderIds.filter(_id => _id !== column._id)
+        dispatch(updateCurrentActiveBoard(newBoard))
+
+        // call api
+        deleteColumnDetailsAPI(column._id).then(res => {
+          toast.success(res?.deleteResult || 'Column and its cards deleted successfully')
+        })
       })
       .catch(() => {})
   }

@@ -7,14 +7,25 @@ import { useState } from 'react'
 import TextField from '@mui/material/TextField'
 import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
+import {
+  updateCurrentActiveBoard,
+  selectCurrentActiveBoard
+} from '~/redux/activeBoard/activeBoardSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { createNewColumnAPI } from '~/apis'
+import { generatePlaceholderCard } from '~/utils/formatters'
+import { cloneDeep } from 'lodash'
 
-function ListColumns( { columns, createNewColumn, createNewCard, deleteColumnDetails } ) {
+function ListColumns( { columns } ) {
+  const dispatch = useDispatch()
+  const board = useSelector(selectCurrentActiveBoard)
+
   const [openNewColumnForm, setOpenNewColumnForm] = useState(false)
   const toggleOpenNewColumnForm = () => setOpenNewColumnForm(!openNewColumnForm)
 
   const [newColumnTitle, setNewColumnTitle] = useState('')
 
-  const addNewColumn = () => {
+  const addNewColumn = async () => {
     if (!newColumnTitle) {
       toast.error('Please enter column title')
       return
@@ -24,7 +35,25 @@ function ListColumns( { columns, createNewColumn, createNewCard, deleteColumnDet
       title: newColumnTitle
     }
 
-    createNewColumn(newColumnData)
+    const createdColumn = await createNewColumnAPI({
+      ...newColumnData,
+      boardId: board._id
+    })
+
+    createdColumn.cards = [generatePlaceholderCard(createdColumn)]
+    createdColumn.cardOrderIds = [generatePlaceholderCard(createdColumn)._id]
+
+    //Bug: dinh rule immutability cua redux: khong duoc sua mang truc tiep ( toan tu... la shallow copy)
+    // Fix: Dung deepclone
+    const newBoard = cloneDeep(board)
+    newBoard.columns.push(createdColumn)
+    newBoard.columnOrderIds.push(createdColumn._id)
+
+    // Cach 2: vi concat se merge 2 mang lai thanh mot mang moi nen khong dinh bug immutability cua redux
+    // const newBoard = { ...board }
+    // newBoard.columns = newBoard.columns.concat([createdColumn])
+    // newBoard.columnOrderIds = newBoard.columnOrderIds.concat([createdColumn._id])
+    dispatch(updateCurrentActiveBoard(newBoard))
 
     // Reset form and close form
     toggleOpenNewColumnForm()
@@ -48,8 +77,6 @@ function ListColumns( { columns, createNewColumn, createNewCard, deleteColumnDet
         {columns?.map(column => (<Column
           key={column._id}
           column={column}
-          createNewCard={createNewCard}
-          deleteColumnDetails={deleteColumnDetails}
         />))}
 
         {/* Add column button */}
