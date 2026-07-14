@@ -1,10 +1,10 @@
+import { toast } from 'react-toastify'
 import authorizeAxiosInstance from '~/utils/authorizeAxios'
 import { API_ROOT } from '~/utils/constants'
 
 /**
  * Chung ta se khong can try/catch doi voi moi request boi no se gay ra viec du thua code catch loi qua nhieu
- * Giai phap clean code la se xu ly loi tap trung tai mot noi bang cach tan dung interceptor cua axios - Interceptor la 
- * cach ma chung ta se danh chan giua request va response de xu ly logic ma chung ta muon
+ * Giai phap clean code la se xu ly loi tap trung tai mot noi bang cach tan dung interceptor cua axios - Interceptor la cach ma chung ta se danh chan giua request va response de xu ly logic ma chung ta muon
  */
 
 export const updateBoardDetailsAPI = async (boardId, updateData) => {
@@ -36,5 +36,18 @@ export const deleteColumnDetailsAPI = async (columnId) => {
 // CARD API
 export const createNewCardAPI = async (newCardData) => {
   const response = await authorizeAxiosInstance.post(`${API_ROOT}/v1/cards`, newCardData)
+  return response.data
+}
+
+// USERS
+export const registerUserAPI = async (data) => {
+  const response = await authorizeAxiosInstance.post(`${API_ROOT}/v1/users/register`, data)
+  toast.success('Register successfully! Please check your email to verify your account.', { theme: 'colored' })
+  return response.data
+}
+
+export const verifyUserAPI = async (data) => {
+  const response = await authorizeAxiosInstance.put(`${API_ROOT}/v1/users/verify`, data)
+  toast.success('Your account has been verified successfully! Now you can login to enjoy our services!', { theme: 'colored' })
   return response.data
 }
