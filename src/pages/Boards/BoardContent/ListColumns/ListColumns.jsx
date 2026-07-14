@@ -94,6 +94,7 @@ function ListColumns( { columns } ) {
           }}
           >
             <Button
+              className="interceptor-loading"
               startIcon={<NoteAddIcon />}
               sx={{
                 color: 'white',
