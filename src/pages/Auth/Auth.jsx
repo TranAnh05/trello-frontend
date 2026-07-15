@@ -1,13 +1,20 @@
-// TrungQuanDev: https://youtube.com/@trungquandev
-import { useLocation } from 'react-router-dom'
+import { useLocation, Navigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
+import { useSelector } from 'react-redux'
+import { selectCurrentUser } from '~/redux/user/userSlice.js'
 
 function Auth() {
   const location = useLocation()
   const isLogin = location.pathname === '/login'
   const isRegister = location.pathname === '/register'
+
+  // Cach 1 - Dieu huong user dua tren trang thai dang nhap
+  const currentUser = useSelector(selectCurrentUser)
+  if (currentUser) {
+    return <Navigate to='/' replace={true} />
+  }
 
   return (
     <Box sx={{
