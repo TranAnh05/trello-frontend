@@ -41,7 +41,6 @@ function LoginForm() {
     ).then(res => {
       if (!res.error) navigate('/')
     })
-
   }
 
   return (

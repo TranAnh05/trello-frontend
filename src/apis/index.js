@@ -17,6 +17,11 @@ export const moveCardToDifferentColumnAPI = async (updateData) => {
   return response.data
 }
 
+export const fetchBoardsAPI = async (searchPath) => {
+  const response = await authorizeAxiosInstance.get(`${API_ROOT}/v1/boards${searchPath}`)
+  return response.data
+}
+
 // COLUMN API
 export const createNewColumnAPI = async (newColumnData) => {
   const response = await authorizeAxiosInstance.post(`${API_ROOT}/v1/columns`, newColumnData)

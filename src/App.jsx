@@ -5,6 +5,8 @@ import Auth from '~/pages/Auth/Auth'
 import AccountVerification from '~/pages/Auth/AccountVerification'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice.js'
+import Settings from '~/pages/Settings/Settings'
+import Boards from '~/pages/Boards'
 
 // Cach 2 - Dieu huong user dua tren trang thai dang nhap
 const ProtectedRoute = ({ user }) => {
@@ -19,7 +21,7 @@ function App() {
     <Routes>
       {/* Redirect route */}
       {/* replace={true}: thay the route /, co the hieu route / se khong con nam trong history cua Browser   */}
-      <Route path='/' element={<Navigate to='/boards/6a51c33a11efab08e38df961' replace={true} />} />
+      <Route path='/' element={<Navigate to='/boards' replace={true} />} />
 
       {/*
         ProtectedRoute: chi cho phep user da dang nhap truy cap vao cac route con ben trong
@@ -29,6 +31,11 @@ function App() {
       <Route element={<ProtectedRoute user={currentUser} />}>
         {/* Board route */}
         <Route path='/boards/:boardId' element={<Board />} />
+        <Route path='/boards' element={<Boards />} />
+
+        {/* User setting */}
+        <Route path='/settings/account' element={<Settings />} />
+        <Route path='/settings/security' element={<Settings />} />
       </Route>
 
       {/* Authentication route */}

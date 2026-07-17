@@ -2,6 +2,7 @@
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import CssBaseline from '@mui/material/CssBaseline'
+import GlobalStyles from '@mui/material/GlobalStyles'
 import theme from './theme'
 import { Experimental_CssVarsProvider as CssVarsProvider } from '@mui/material/styles'
 import { ToastContainer } from 'react-toastify'
@@ -35,6 +36,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             dialogProps: { maxWidth: 'xs' },
             confirmationButtonProps: { color: 'warning', variant: 'outlined' }
           }}>
+            <GlobalStyles styles={{
+              a: { textDecoration: 'none' }
+            }} />
             <CssBaseline />
             <App />
             <ToastContainer />
