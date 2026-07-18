@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { activeBoardReducer } from './activeBoard/activeBoardSlice.js'
 import { userReducer } from './user/userSlice.js'
+import { activeCardReducer } from './activeCard/activeCardSlice.js'
 
 import { combineReducers } from 'redux'
 import { persistReducer } from 'redux-persist'
@@ -15,6 +16,7 @@ const rootPersistConfig = {
 // combine cac reducer lai voi nhau
 const reducers = combineReducers({
   activeBoard: activeBoardReducer,
+  activeCard: activeCardReducer,
   user: userReducer
 })
 

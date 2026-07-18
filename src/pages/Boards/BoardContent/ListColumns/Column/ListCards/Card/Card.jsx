@@ -9,8 +9,11 @@ import ModeCommentIcon from '@mui/icons-material/ModeComment'
 import AttachmentIcon from '@mui/icons-material/Attachment'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { updateCurrentActiveCard } from '~/redux/activeCard/activeCardSlice'
+import { useDispatch } from 'react-redux'
 
 function Card({ card }) {
+  const dispatch = useDispatch()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card._id, data: { ...card } })
   const dndKitCardStyles = {
     // touchAction: 'none', // Danh cho sensor default dang PointerSensor. Neu khong co touchAction thi khi keo tha column tren mobile se bi loi. Khi keo tha column tren mobile thi no se bi scroll theo trang web thay vi keo tha column
@@ -25,8 +28,13 @@ function Card({ card }) {
     return !!card?.memberIds?.length || !!card?.comments?.length || !!card?.attachments?.length
   }
 
+  const setActiveCard = () => {
+    dispatch(updateCurrentActiveCard(card))
+  }
+
   return (
     <MuiCard
+      onClick={setActiveCard}
       ref={setNodeRef}
       {...attributes}
       {...listeners}
