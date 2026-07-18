@@ -55,6 +55,9 @@ export const activeBoardSlice = createSlice({
       // action.payload chinh la response.data tu API tra ve
       let board = action.payload
 
+      // members is board will include two array: owners and members
+      board.FE_allUsers = board.owners.concat(board.members)
+
       // Xu ly du lieu
       board.columns = mapOrder(board.columns, board.columnOrderIds, '_id')
 
