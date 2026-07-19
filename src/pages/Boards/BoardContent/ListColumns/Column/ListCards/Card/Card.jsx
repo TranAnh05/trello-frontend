@@ -9,7 +9,7 @@ import ModeCommentIcon from '@mui/icons-material/ModeComment'
 import AttachmentIcon from '@mui/icons-material/Attachment'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { updateCurrentActiveCard } from '~/redux/activeCard/activeCardSlice'
+import { updateCurrentActiveCard, showModalActiveCard } from '~/redux/activeCard/activeCardSlice'
 import { useDispatch } from 'react-redux'
 
 function Card({ card }) {
@@ -30,6 +30,7 @@ function Card({ card }) {
 
   const setActiveCard = () => {
     dispatch(updateCurrentActiveCard(card))
+    dispatch(showModalActiveCard())
   }
 
   return (
