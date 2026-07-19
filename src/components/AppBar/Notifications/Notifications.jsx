@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import moment from 'moment'
 import Badge from '@mui/material/Badge'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
@@ -13,6 +13,11 @@ import Divider from '@mui/material/Divider'
 import GroupAddIcon from '@mui/icons-material/GroupAdd'
 import DoneIcon from '@mui/icons-material/Done'
 import NotInterestedIcon from '@mui/icons-material/NotInterested'
+import { useDispatch, useSelector } from 'react-redux'
+import { selectCurrentNotifications, fetchInvitationsAPI, updateBoardInvitationAPI, addNotification } from '~/redux/notifications/notificationsSlice.js'
+import { socketIoInstance } from '~/main.jsx'
+import { selectCurrentUser } from '~/redux/user/userSlice'
+import { useNavigate } from 'react-router-dom'
 
 const BOARD_INVITATION_STATUS = {
   PENDING: 'PENDING',
@@ -23,15 +28,49 @@ const BOARD_INVITATION_STATUS = {
 function Notifications() {
   const [anchorEl, setAnchorEl] = useState(null)
   const open = Boolean(anchorEl)
+  const dispatch = useDispatch()
+  const notifications = useSelector(selectCurrentNotifications)
+  const currentUser = useSelector(selectCurrentUser)
+  const [hasNewNotification, setHasNewNotification] = useState(false)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    dispatch(fetchInvitationsAPI())
+
+    // create a handling function when receive a event from socket.io server
+    const onReceiveNewInvitation = (invitation) => {
+      // if current signin user in redux is invitee in the invitation
+      if (invitation.inviteeId === currentUser._id) {
+        // add new invitation to redux
+        dispatch(addNotification(invitation))
+
+        // update state having notification coming
+        setHasNewNotification(true)
+      }
+    }
+    // listen event from socket.io server
+    socketIoInstance.on('BE_USER_INVITED_TO_BOARD', onReceiveNewInvitation)
+
+    // clean up function to remove the event listener when the component unmounts
+    return () => {
+      socketIoInstance.off('BE_USER_INVITED_TO_BOARD', onReceiveNewInvitation)
+    }
+  }, [dispatch, currentUser._id])
+
   const handleClickNotificationIcon = (event) => {
     setAnchorEl(event.currentTarget)
+    setHasNewNotification(false)
   }
   const handleClose = () => {
     setAnchorEl(null)
   }
 
-  const updateBoardInvitation = (status) => {
-    console.log('status: ', status)
+  const updateBoardInvitation = (status, invitationId) => {
+    dispatch(updateBoardInvitationAPI({ status, invitationId })).then((res) => {
+      if (res.payload.boardInvitation.status === BOARD_INVITATION_STATUS.ACCEPTED) {
+        navigate(`/boards/${res.payload.boardInvitation.boardId}`)
+      }
+    })
   }
 
   return (
@@ -39,8 +78,7 @@ function Notifications() {
       <Tooltip title="Notifications">
         <Badge
           color="warning"
-          // variant="none"
-          variant="dot"
+          variant={hasNewNotification ? 'dot' : 'none'}
           sx={{ cursor: 'pointer' }}
           id="basic-button-open-notification"
           aria-controls={open ? 'basic-notification-drop-down' : undefined}
@@ -49,8 +87,7 @@ function Notifications() {
           onClick={handleClickNotificationIcon}
         >
           <NotificationsNoneIcon sx={{
-            // color: 'white'
-            color: 'yellow'
+            color: hasNewNotification ? 'yellow' : 'white'
           }} />
         </Badge>
       </Tooltip>
@@ -63,8 +100,8 @@ function Notifications() {
         onClose={handleClose}
         MenuListProps={{ 'aria-labelledby': 'basic-button-open-notification' }}
       >
-        {[...Array(0)].length === 0 && <MenuItem sx={{ minWidth: 200 }}>You do not have any new notifications.</MenuItem>}
-        {[...Array(6)].map((_, index) =>
+        {!notifications || notifications.length === 0 && <MenuItem sx={{ minWidth: 200 }}>You do not have any new notifications.</MenuItem>}
+        {notifications?.map((notification, index) =>
           <Box key={index}>
             <MenuItem sx={{
               minWidth: 200,
@@ -75,10 +112,11 @@ function Notifications() {
                 {/* Nội dung của thông báo */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Box><GroupAddIcon fontSize="small" /></Box>
-                  <Box><strong>TrungQuanDev</strong> had invited you to join the board <strong>MERN Stack Advanced</strong></Box>
+                  <Box><strong>{notification.inviter?.displayName}</strong> had invited you to join the board <strong>{notification.board?.title}</strong></Box>
                 </Box>
 
                 {/* Khi Status của thông báo này là PENDING thì sẽ hiện 2 Button */}
+                {notification.boardInvitation?.status === BOARD_INVITATION_STATUS.PENDING &&
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
                   <Button
                     className="interceptor-loading"
@@ -86,7 +124,7 @@ function Notifications() {
                     variant="contained"
                     color="success"
                     size="small"
-                    onClick={() => updateBoardInvitation(BOARD_INVITATION_STATUS.ACCEPTED)}
+                    onClick={() => updateBoardInvitation(BOARD_INVITATION_STATUS.ACCEPTED, notification._id)}
                   >
                     Accept
                   </Button>
@@ -96,28 +134,33 @@ function Notifications() {
                     variant="contained"
                     color="secondary"
                     size="small"
-                    onClick={() => updateBoardInvitation(BOARD_INVITATION_STATUS.REJECTED)}
+                    onClick={() => updateBoardInvitation(BOARD_INVITATION_STATUS.REJECTED, notification._id)}
                   >
                     Reject
                   </Button>
                 </Box>
+                }
 
                 {/* Khi Status của thông báo này là ACCEPTED hoặc REJECTED thì sẽ hiện thông tin đó lên */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                  <Chip icon={<DoneIcon />} label="Accepted" color="success" size="small" />
-                  <Chip icon={<NotInterestedIcon />} label="Rejected" size="small" />
+                  {notification.boardInvitation?.status === BOARD_INVITATION_STATUS.ACCEPTED &&
+                    <Chip icon={<DoneIcon />} label="Accepted" color="success" size="small" />
+                  }
+                  {notification.boardInvitation?.status === BOARD_INVITATION_STATUS.REJECTED &&
+                    <Chip icon={<NotInterestedIcon />} label="Rejected" size="small" />
+                  }
                 </Box>
 
                 {/* Thời gian của thông báo */}
                 <Box sx={{ textAlign: 'right' }}>
                   <Typography variant="span" sx={{ fontSize: '13px' }}>
-                    {moment().format('llll')}
+                    {moment(notification.createdAt).format('llll')}
                   </Typography>
                 </Box>
               </Box>
             </MenuItem>
             {/* Cái đường kẻ Divider sẽ không cho hiện nếu là phần tử cuối */}
-            {index !== ([...Array(6)].length - 1) && <Divider />}
+            {index !== (notifications?.length - 1) && <Divider />}
           </Box>
         )}
       </Menu>

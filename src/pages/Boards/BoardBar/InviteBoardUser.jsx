@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form'
 import { EMAIL_RULE, FIELD_REQUIRED_MESSAGE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 import FieldErrorAlert from '~/components/Form/FieldErrorAlert'
 import { inviteUserToBoardAPI } from '~/apis'
+import { socketIoInstance } from '~/main.jsx'
 
 function InviteBoardUser({ boardId }) {
   /**
@@ -28,9 +29,16 @@ function InviteBoardUser({ boardId }) {
 
   const submitInviteUserToBoard = (data) => {
     const { inviteeEmail } = data
-    inviteUserToBoardAPI({ inviteeEmail, boardId }).then(() => {
+    inviteUserToBoardAPI({ inviteeEmail, boardId }).then((invitation) => {
       setValue('inviteeEmail', null)
       setAnchorPopoverElement(null)
+
+      // dispatch/emit a event to socket.io server to notify the invited user
+      /**
+       * FE_USER_INVITED_TO_BOARD: name of the event
+       * invitation: data to send to the server
+       */
+      socketIoInstance.emit('FE_USER_INVITED_TO_BOARD', invitation)
     })
   }
 
