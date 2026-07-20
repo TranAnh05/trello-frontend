@@ -25,16 +25,11 @@ const persistor = persistStore(store)
 import { injectStore } from '~/utils/authorizeAxios'
 injectStore(store)
 
-// config socket.io
-import { io } from 'socket.io-client'
-import { API_ROOT } from '~/utils/constants'
-export const socketIoInstance = io(API_ROOT)
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   // <React.StrictMode>
   <Provider store={store}>
     <PersistGate persistor={persistor}>
-      <BrowserRouter basename='/'> {/**basename: Code phai chay qua route / moi chay den route tiep theo */}
+      <BrowserRouter basename='/' future={{ v7_relativeSplatPath: true, v7_startTransition: true }}> {/**basename: Code phai chay qua route / moi chay den route tiep theo */}
         <CssVarsProvider theme={theme}>
           <ConfirmProvider defaultOptions={{
             allowClose: false,

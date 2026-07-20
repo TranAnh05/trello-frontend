@@ -15,7 +15,7 @@ import DoneIcon from '@mui/icons-material/Done'
 import NotInterestedIcon from '@mui/icons-material/NotInterested'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectCurrentNotifications, fetchInvitationsAPI, updateBoardInvitationAPI, addNotification } from '~/redux/notifications/notificationsSlice.js'
-import { socketIoInstance } from '~/main.jsx'
+import { socketIoInstance } from '~/socketClient'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { useNavigate } from 'react-router-dom'
 
@@ -100,7 +100,7 @@ function Notifications() {
         onClose={handleClose}
         MenuListProps={{ 'aria-labelledby': 'basic-button-open-notification' }}
       >
-        {!notifications || notifications.length === 0 && <MenuItem sx={{ minWidth: 200 }}>You do not have any new notifications.</MenuItem>}
+        {(!notifications || notifications.length === 0) && <MenuItem sx={{ minWidth: 200 }}>You do not have any new notifications.</MenuItem>}
         {notifications?.map((notification, index) =>
           <Box key={index}>
             <MenuItem sx={{
